@@ -1,0 +1,31 @@
+{
+    "name": "zhsw/hik-iot-php",
+    "description": "海康云眸iot api 外部独立应用开发",
+    "type": "library",
+    "license": "MIT",
+    "minimum-stability": "dev",
+    "authors": [
+        {
+            "name": "zhaoshiwei",
+            "email": "1297286680@qq.com"
+        }
+    ],
+    "require": {
+        "php": ">=7.2",
+        "guzzlehttp/guzzle": "^6.0"
+    },
+    "require-dev": {
+        "php": ">=7.2"
+    },
+    "autoload": {
+        "psr-4": {
+            "HikIot\\": "src/"
+        }
+    },
+    "repositories": {
+        "packagist": {
+            "type": "composer",
+            "url": "https://mirrors.aliyun.com/composer/"
+        }
+    }
+}
