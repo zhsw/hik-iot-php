@@ -4,6 +4,7 @@ namespace HikIot;
 
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\RequestException;
+use GuzzleHttp\Pool;
 use HikIot\Exception\InvalidApiException;
 use HikIot\RestApi\HikRestApi;
 
@@ -22,7 +23,7 @@ class HikIot
     private $hik_api = null;
 
     /**
-     * @var HikRestApi
+     * @var array
      */
     private $hik_api_collection = null;
 
@@ -87,7 +88,7 @@ class HikIot
                 $this->hik_api->uri,
                 [
                     'headers' => $this->hik_api->headers,
-                    'form_params' => $this->hik_api->getParams(),
+                    'query' => $this->hik_api->getParams(),
                 ]);
         } catch (RequestException $e) {
             $response = $e->getResponse();
@@ -98,14 +99,38 @@ class HikIot
                 ];
             }
         }
-        return $response->getBody()->getContents();
+        return json_decode($response->getBody()->getContents(), true);
     }
 
     /**
      * 初始化请求
+     * @param $requests
+     * @return HikIot
+     * @throws InvalidApiException
      */
-    public function initMultiRequest()
+    public function initMultiRequest($requests)
     {
+        $api_collection = [];
+        foreach ($requests as $request) {
+            if (!isset($request['request_name'])) {
+                throw new \Exception('参数错误');
+            }
+            if (false === HikApiClassMap::getClassName($request['request_name']))
+                throw new InvalidApiException($request['request_name']);
+            $class_name = HikApiClassMap::getClassName($request['request_name']);
+
+            $api = new $class_name;
+
+            if (!empty($request['authorization'])) {
+                $api->setReqAuth($request['authorization']);
+            }
+            if (!empty($request['request_params'])) {
+                $api->setReqParams($request['request_params']);
+            }
+            $api_collection[] = $api;
+        }
+        $this->hik_api_collection = $api_collection;
+        return $this;
     }
 
     /**
@@ -113,6 +138,59 @@ class HikIot
      */
     public function sendMultiRequest()
     {
+        if (empty($this->hik_api_collection)) {
+            throw new \Exception('init requests before send');
+        }
+
+        $client = $this->guzzle_client;
+
+        $requests = function () use ($client) {
+            foreach ($this->hik_api_collection as $key => $api) {
+                if (!$api instanceof HikRestApi) {
+                    throw new \Exception('init requests before send');
+                }
+                $api->ready();
+                $api->initUri();
+                $api->initHeaders();
+                yield function () use ($client, $api) {
+                    return $client->requestAsync(
+                        $api->method,
+                        $api->uri,
+                        [
+                            'headers' => $api->headers,
+                            'query' => $api->getParams(),
+                        ]);
+                };
+            }
+        };
+
+        $result = [];
+        $pool = new Pool($client, $requests(), [
+            'concurrency' => 5,
+            'fulfilled' => function ($response, $index) use (&$result) {
+                $result[$index] = json_decode($response->getBody()->getContents());
+            },
+            'rejected' => function ($reason, $index) use (&$result) {
+                $response = $reason->getResponse();
+                $status = $response->getStatusCode();
+                if ($status == '401') {
+                    $result[$index] = [
+                        'code' => 401,
+                        'message' => '授权过期'
+                    ];
+                } else {
+                    $result[$index] = [
+                        'code' => $status,
+                    ];
+                }
+            },
+        ]);
+
+        // 开始发送请求
+        $promise = $pool->promise();
+        $promise->wait();
+
+        return $result;
     }
 
 }
