@@ -3,7 +3,7 @@
     "description": "海康云眸iot api 外部独立应用开发",
     "type": "library",
     "license": "MIT",
-    "version": "1.0.0",
+    "version": "2.0.0",
     "minimum-stability": "dev",
     "authors": [
         {
