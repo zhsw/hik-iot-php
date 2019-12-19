@@ -139,10 +139,13 @@ class HikIot
      * @return array
      * @throws \Exception
      */
-    public function sendMultiRequest(int $concurrency = 5)
+    public function sendMultiRequest(int $concurrency = null)
     {
         if (empty($this->hik_api_collection)) {
             throw new \Exception('init requests before send');
+        }
+        if ($concurrency === null) {
+            $concurrency = 5;
         }
         if ($concurrency <= 0) {
             throw new \Exception('concurrency must be greater than 0');
@@ -174,7 +177,7 @@ class HikIot
         $pool = new Pool($client, $requests(), [
             'concurrency' => $concurrency,
             'fulfilled' => function ($response, $index) use (&$result) {
-                $result[$index] = json_decode($response->getBody()->getContents());
+                $result[$index] = json_decode($response->getBody()->getContents(), true);
             },
             'rejected' => function ($reason, $index) use (&$result) {
                 $response = $reason->getResponse();
