@@ -25,7 +25,7 @@ class DeleteGroup extends HikRestApi
 
     public function initUri()
     {
-        $this->api = preg_replace('/\\{groupNo\\}/', $this->required_params['groupNo'], $this->api);
+        $this->api = preg_replace('/\\{groupNo\\}/', $this->request_params['groupNo'], $this->api);
         parent::initUri();
     }
 

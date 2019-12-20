@@ -25,7 +25,7 @@ class UpdateDevice extends HikRestApi
 
     public function initUri()
     {
-        $this->api = preg_replace('/\\{deviceId\\}/', $this->required_params['deviceId'], $this->api);
+        $this->api = preg_replace('/\\{deviceId\\}/', $this->request_params['deviceId'], $this->api);
         parent::initUri();
     }
 

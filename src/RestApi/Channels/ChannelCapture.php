@@ -24,7 +24,7 @@ class ChannelCapture extends HikRestApi
 
     public function initUri()
     {
-        $this->api = preg_replace('/\\{channelId\\}/', $this->required_params['channelId'], $this->api);
+        $this->api = preg_replace('/\\{channelId\\}/', $this->request_params['channelId'], $this->api);
         parent::initUri();
     }
 
